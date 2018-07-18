@@ -9,20 +9,20 @@ import (
 	"gopkg.in/mgo.v2/bson"
 	"net/http"
 	"os"
-	"io"
 	"log"
 	"pickup/models"
-	"pickup/helpers"
+	// "pickup/helpers"
 	"fmt"
 	"encoding/xml"
 	"bufio"
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
+	"net/http/httputil"
 	"pickup/settings"
+	"gopkg.in/Graylog2/go-gelf.v1/gelf"
 	jwt "github.com/dgrijalva/jwt-go"
 	jwt_request "github.com/dgrijalva/jwt-go/request"
-	"gopkg.in/Graylog2/go-gelf.v1/gelf"
 )
 
 var session *mgo.Session
@@ -39,8 +39,13 @@ type Settings struct {
 type handler func(http.ResponseWriter, *http.Request, *models.Context) error
 
 func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	log.Println(r)
-	log.Println("Auth:", r.Header.Get("Authorization"))
+	dump, err := httputil.DumpRequest(req, true)
+	if err != nil {
+		http.Error(w, fmt.Sprint(err), http.StatusInternalServerError)
+		return
+	}
+
+	log.Println(string(dump))
 
 	buf := new(httpbuf.Buffer)
 	log.Println(buf)
@@ -49,25 +54,21 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
 			return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
 		} else {
+			log.Println("Token parsed and returned")
 			return auth.PublicKey, nil
 		}
 	})
 
 	  //create the context
 	  ctx, _ := models.NewContext(r, session, database, auth)
-	  //if err != nil {
-	  	  //http.Error(w, err.Error(), http.StatusInternalServerError)
-	  //}
 	  defer ctx.Close()
 
-	  if err == nil && token.Valid {//&& !auth.IsInBlacklist(r.Header.Get("Authorization")) {
-		//ctx, _ = models.NewContext(r, dbmap, database, auth)
-		//defer ctx.Close()
+    if err == nil && token.Valid {
+    	fmt.Printf("%s", r.URL.Path)
 		claims := token.Claims.(jwt.MapClaims)
 		uid, _ := helpers.ObjectIdFromString(claims["sub"].(string))
-
-		err = ctx.C("users").Find(bson.M{"_id":uid}).Sort("-timestamp").One(&ctx.User)
-		log.Println(ctx.User)
+		err = ctx.C("users").Find(bson.M{"_id":uid}).One(&ctx.User)
+		
 		if err != nil {
 			log.Println("Fetch error")
 			w.WriteHeader(http.StatusUnauthorized)
@@ -83,15 +84,18 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusUnauthorized)
 				return
 			}
+		} else if r.URL.Path != "/login" && !((r.URL.Path == "/users" || r.URL.Path == "/verify") && r.Method == "POST") {
+			log.Println("Unauth")
+			w.WriteHeader(http.StatusUnauthorized)
+			return
 		}
-	} else if r.URL.Path != "/login" && !((r.URL.Path == "/users" || r.URL.Path == "/verify") && r.Method == "POST") {
-		log.Println("Unauth")
-		w.WriteHeader(http.StatusUnauthorized)
-		return
 	}
 
-
 	err = h(buf, r, ctx)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	buf.Apply(w)
 }
 
@@ -100,16 +104,9 @@ func init() {
 }
 
 func main() {
-	gelfWriter, err := gelf.NewWriter("127.0.0.1:12202")
+	session, err := mgo.Dial("mongodb://127.0.0.1:27017")
 	if err != nil {
-		log.Fatalf("gelf.NewWriter: %s", err)
-	}
-	// log to both stderr and graylog2
-	log.SetOutput(io.MultiWriter(os.Stderr, gelfWriter))
-	log.Printf("logging to stderr & graylog2@")
-
-	session, err = mgo.Dial(os.Getenv("127.0.0.1"))
-	if err != nil {
+		log.Println("Fatal error: ", err)
 		panic(err)
 	}
 
@@ -124,9 +121,9 @@ func main() {
 	if err := session.DB("pickup").C("users").EnsureIndex(mgo.Index{
 	        Key:    []string{"email"},
 	        Unique: true,
-	    }); err != nil {
-	        log.Println("Ensuring unqiue index on users:", err)
-    }
+	    });
+
+	helpers.CheckErr(err, "Error ensuring unique email index on users.")
 
     geoIndex := mgo.Index{
 	    Key: []string{"$2d:location"},
@@ -134,27 +131,17 @@ func main() {
 	}
 
 	if err := session.DB("pickup").C("courts").EnsureIndex(geoIndex); err != nil {
-		log.Println("Ensuring unqiue index on court coordinates:", err)
+		log.Println("Ensuring unqiue index on court coordinates:", err.Error())
 		return
 	}
 
 	var u []models.User
 	query := session.DB("pickup").C("users").Find(bson.M{})
 	if err = query.All(&u); err != nil {
-		log.Println("Failed to query users for name/ID listings.", err)
+		log.Println("Failed to query users for name/ID listings.", err.Error())
 	} else {
 		for _, user := range u {
-			log.Println(user.GetIDEncoded(), user.Username, user.ID)
-		}
-	}
-
-	var c []models.Court
-	query = session.DB("pickup").C("courts").Find(bson.M{})
-	if err = query.All(&c); err != nil {
-		log.Println("Failed to query courts for listings.", err)
-	} else {
-		for _, court := range c {
-			log.Println(court.GetIDEncoded(), court.Name, court.ID)
+			log.Println(user.GetIDEncoded(), user.Username)
 		}
 	}
 
@@ -164,16 +151,16 @@ func main() {
 	router.Add("POST", "/login", handler(controllers.Login)).Name("Login")
 
 	router.Add("GET", "/users/me", handler(controllers.UserAccount))
-	// router.Add("POST", "/users/me", handler(controllers.UserUpdate))
-
 
 	router.Add("GET", "/users/{id}", handler(controllers.UserInfo))
-	router.Add("GET", "/users", handler(controllers.UsersIndex))
 
+	router.Add("GET", "/users", handler(controllers.UsersIndex))
 	router.Add("POST", "/users", handler(controllers.UsersNew))
-	// router.Add("POST", "/verify", handler(controllers.UsersVerify))
+
+	router.Add("GET", "/test", handler(controllers.TestName))
 
 	router.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("./static/"))))
+	
 	router.Add("GET", "/", handler(controllers.Index)).Name("index")
 
 	if err := http.ListenAndServe(":8077", router); err != nil {

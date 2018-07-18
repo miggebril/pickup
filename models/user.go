@@ -14,7 +14,7 @@ type TokenAuthentication struct {
 type User struct {
 	ID       bson.ObjectId `json:"-" bson:"_id,omitempty" col:"users"` 
 	Email string
-	Username string 			`json:"-"`
+	Username string 			
 	Password []byte			`json:"-"`
 
 	Verified bool

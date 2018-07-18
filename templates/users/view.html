@@ -1,0 +1,52 @@
+{{define "title"}}User{{end}}
+{{define "scripts"}}
+<script>
+$(function () {
+    App.setPage("user");
+    App.init();
+});
+</script>
+{{end}}
+{{define "content"}}
+<div class="box-body big">
+	<h3 class="form-title center">Send things with a FlyMate</h3>
+	<h6 class="center">Send things from any city to any other for as low as $20</h6>
+	<div class="separator"></div>
+	<form role="form" class="login-form" action="/users/{{.user.ID | GetIDEncoded}}" method="POST">
+  <div class="form-group">
+    <label for="inputName">Full Name</label>
+    <i class="fa fa-font"></i>
+    <input name="name" type="text" class="form-control" id="inputName" value="{{.user.Name}}" >
+  </div>
+  <div class="form-group">
+    <label for="inputEmail">Email address</label>
+    <i class="fa fa-envelope"></i>
+    <input name="email" type="email" class="form-control" id="inputEmail" value="{{.user.Email}}">
+  </div>
+  <div class="form-group">
+    <label for="inputPhone">Phone number</label>
+    <i class="fa fa-phone"></i>
+    <input name="phone" type="text" class="form-control" id="inputPhone" value="{{.user.Phone}}">
+  </div>
+  <!--<div class="form-group"> 
+    <label for="inputPassword1">Password</label>
+    <i class="fa fa-lock"></i>
+    <input name="password" type="password" class="form-control" id="inputPassword1" >
+  </div>
+  <div class="form-group"> 
+    <label for="inputPassword2">Repeat Password</label>
+    <i class="fa fa-check-square-o"></i>
+    <input name="password_confirm" type="password" class="form-control" id="inputPassword2" >
+  </div>-->
+  <button type="submit" class="btn btn-success">Save</button>
+</form>
+<div class="separator"></div>
+<form role="form" class="login-form" action="/users/{{.user.ID | GetIDEncoded}}/profile" method="POST" enctype="multipart/form-data">
+	<div class="form-group">
+  		<label for="inputProfile">Profile</label>
+  		<input type="file" name="profile" id="inputProfile">
+  	</div>
+  	<button type="submit" class="btn btn-primary">Upload</button>
+</form>
+</div>
+{{end}}

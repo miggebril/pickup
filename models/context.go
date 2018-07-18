@@ -43,14 +43,14 @@ func (c *Context) GetUser(id bson.ObjectId) (User, error) {
 
 func (c *Context) SetUser(id bson.ObjectId) (error) {
   coll := c.C("users")
-  query := coll.Find(bson.M{"_id":id}).Sort("-timestamp")
+  query := coll.Find(bson.M{"_id":id})
   log.Println("GetUser:", id)
   return query.One(&c.User)
 }
 
 func (c *Context) GetOneUser() (User, error) {
   coll := c.C("users")
-  query := coll.Find(bson.M{}).Sort("-timestamp")
+  query := coll.Find(bson.M{})
   var u User
   err := query.One(&u)
   return u, err

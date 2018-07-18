@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"log"
 	"pickup/models"
 	"pickup/helpers"
   	"net/http"
@@ -90,7 +91,27 @@ func T(name string, pjax string) *template.Template {
 	return t
 }
 
-func Login(w http.ResponseWriter, r *http.Request, ctx *models.Context) error {
+func TestName(w http.ResponseWriter, r *http.Request, ctx *models.Context) (err error) {
+	u := make(map[string]string)
+
+	u["name"] = ctx.User.Username
+	js, err := json.Marshal(u)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(js)
+	return nil
+}
+
+func LoginForm(w http.ResponseWriter, r *http.Request, ctx *models.Context) (err error) {
+	return T("login.html", r.Header.Get("X-PJAX")).Execute(w, map[string]interface{}{
+		"ctx": ctx,
+	})
+}
+
+func Login(w http.ResponseWriter, r *http.Request, ctx *models.Context) (err error) {
 	email, password := r.FormValue("email"), r.FormValue("password")
 	fmt.Println("Login called on", email, password)
 	token, err := models.Login(ctx, email, password)
@@ -103,6 +124,14 @@ func Login(w http.ResponseWriter, r *http.Request, ctx *models.Context) error {
 	w.WriteHeader(http.StatusOK)
 	w.Write(token)
 	return nil
+}
+
+func RegisterForm(w http.ResponseWriter, r *http.Request, ctx *models.Context) (err error) {
+	return T("register.html", r.Header.Get("X-PJAX")).Execute(w, map[string]interface{}{
+		"ctx": ctx,
+		"email": r.FormValue("email"),
+		"username": r.FormValue("username"),
+	})
 }
 
 func Register(w http.ResponseWriter, r *http.Request, ctx *models.Context) error {

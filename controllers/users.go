@@ -10,6 +10,7 @@ import (
 )
 
 func UsersNew(w http.ResponseWriter, r *http.Request, ctx *models.Context) (err error) {
+    log.Println("UsersNew")
     var form bson.M
 
     if r.Body == nil {
@@ -67,6 +68,7 @@ func UsersNew(w http.ResponseWriter, r *http.Request, ctx *models.Context) (err 
 }
 
 func UserInfo(w http.ResponseWriter, r *http.Request, ctx *models.Context) (err error) {
+    log.Println("UserInfo")
     id, err := helpers.ObjectIdFromString(r.URL.Query().Get(":id"))
     if err != nil {
         http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -98,7 +100,7 @@ func UserInfo(w http.ResponseWriter, r *http.Request, ctx *models.Context) (err 
 }
 
 func UserAccount(w http.ResponseWriter, r *http.Request, ctx *models.Context) (err error) {
-    log.Println("User")
+    log.Println("UserAccount")
     js, err := json.Marshal(ctx.User)
     if err != nil {
         http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -111,14 +113,16 @@ func UserAccount(w http.ResponseWriter, r *http.Request, ctx *models.Context) (e
 }
 
 func UsersIndex(w http.ResponseWriter, r *http.Request, ctx *models.Context) (err error) {
+    log.Println("UsersIndex")
     queryParam := r.URL.Query().Get("q")
 
     var u []models.User
-    query := ctx.C("users").Find(bson.M{"vendor":false, "name": bson.RegEx{Pattern: queryParam, Options: "i"}}).Limit(30)
+    query := ctx.C("users").Find(bson.M{"email": bson.RegEx{Pattern: queryParam, Options: "i"}}).Limit(30)
     if err = query.All(&u); err != nil {
-        log.Println("Failed to query users for proximity listings.", err)
+        log.Println("Failed to query users index.", err)
         return nil
     }
+
     js, err := json.Marshal(u)
     if err != nil {
         http.Error(w, err.Error(), http.StatusInternalServerError)

@@ -5,7 +5,7 @@ import (
 	"pickup/models"
 	"pickup/settings"
 	"bufio"
-	"code.google.com/p/go-uuid/uuid"
+	"gopkg.in/mgo.v2/bson"
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
@@ -55,7 +55,7 @@ func (backend *JWTAuthenticationBackend) Authenticate(user *models.User) bool {
 	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte("testing"), 10)
 
 	testUser := models.User{
-		UUID:     uuid.New(),
+		ID:     bson.NewObjectId(),
 		Username: "haku",
 		Password: string(hashedPassword),
 	}
@@ -93,23 +93,37 @@ func (backend *JWTAuthenticationBackend) IsInBlacklist(token string) bool {
 func getPrivateKey() *rsa.PrivateKey {
 	privateKeyFile, err := os.Open(settings.Get().PrivateKeyPath)
 	if err != nil {
+		log.Println("Error loading private key: ", err.Error())
 		panic(err)
 	}
 
-	pemfileinfo, _ := privateKeyFile.Stat()
-	var size int64 = pemfileinfo.Size()
+	var size int64
+	pemfileinfo, err := privateKeyFile.Stat()
+	if err != nil {
+		log.Println("Error loading private key: ", err.Error())
+		size = 1024
+	} else {
+		size = pemfileinfo.Size()
+	}
+
 	pembytes := make([]byte, size)
 
 	buffer := bufio.NewReader(privateKeyFile)
 	_, err = buffer.Read(pembytes)
+	if err != nil {
+		log.Println("Error reading pem bytes: ", err.Error())
+	}
 
-	data, _ := pem.Decode([]byte(pembytes))
+	data, err := pem.Decode([]byte(pembytes))
+	if err != nil {
+		log.Println("Error decoding pem bytes: ", err.Error())
+	}
 
 	privateKeyFile.Close()
 
 	privateKeyImported, err := x509.ParsePKCS1PrivateKey(data.Bytes)
-
 	if err != nil {
+		log.Println("Error importing private key: ", err.Error())
 		panic(err)
 	}
 
@@ -122,26 +136,41 @@ func getPublicKey() *rsa.PublicKey {
 		panic(err)
 	}
 
-	pemfileinfo, _ := publicKeyFile.Stat()
-	var size int64 = pemfileinfo.Size()
+	var size int64
+	pemfileinfo, err := privateKeyFile.Stat()
+	if err != nil {
+		log.Println("Error loading private key: ", err.Error())
+		size = 1024
+	} else {
+		size = pemfileinfo.Size()
+	}
+
 	pembytes := make([]byte, size)
 
 	buffer := bufio.NewReader(publicKeyFile)
 	_, err = buffer.Read(pembytes)
+	if err != nil {
+		log.Println("Error reading pem bytes: ", err.Error())
+	}
 
-	data, _ := pem.Decode([]byte(pembytes))
+	data, err := pem.Decode([]byte(pembytes))
+	if err != nil {
+		log.Println("Error decoding pem bytes: ", err.Error())
+	}
 
 	publicKeyFile.Close()
 
 	publicKeyImported, err := x509.ParsePKIXPublicKey(data.Bytes)
 
 	if err != nil {
+		log.Println("Error parsing public key: ", err.Error())
 		panic(err)
 	}
 
 	rsaPub, ok := publicKeyImported.(*rsa.PublicKey)
 
 	if !ok {
+		log.Println("Error with public key: ", err.Error())
 		panic(err)
 	}
 
