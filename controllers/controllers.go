@@ -1,7 +1,7 @@
 package controllers
 
 import (
-	"log"
+	"encoding/json"
 	"pickup/models"
 	"pickup/helpers"
   	"net/http"

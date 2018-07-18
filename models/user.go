@@ -45,7 +45,7 @@ func (u *User) SetPassword(password string) {
 	u.Password = hpass
 }
 
-//Login validates and returns a user object if they exist in the database.
+// Login validates and returns a user object if they exist in the database.
 func Login(ctx *Context, email, password string) ([]byte, error) {
 	var u User
 	err := ctx.C("users").Find(bson.M{"email": email}).One(&u)

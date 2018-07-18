@@ -1,6 +1,7 @@
 package main
 
 import (
+	"io"
 	"pickup/controllers"
 	"github.com/goods/httpbuf"
 	"github.com/gorilla/pat"
@@ -11,7 +12,7 @@ import (
 	"os"
 	"log"
 	"pickup/models"
-	// "pickup/helpers"
+	"pickup/helpers"
 	"fmt"
 	"encoding/xml"
 	"bufio"
@@ -36,10 +37,10 @@ type Settings struct {
 	AppSecret string     `xml:"secretkey"`
 }
 
-type handler func(http.ResponseWriter, *http.Request, *models.Context) error
+type handler func(http.ResponseWriter, *http.Request, *models.Context) (err error)
 
 func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	dump, err := httputil.DumpRequest(req, true)
+	dump, err := httputil.DumpRequest(r, true)
 	if err != nil {
 		http.Error(w, fmt.Sprint(err), http.StatusInternalServerError)
 		return
@@ -74,28 +75,16 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		} else {
-			log.Println("Auth:", claims["sub"])
-			uid, _ := helpers.ObjectIdFromString(claims["sub"].(string))
-
-			err = ctx.C("users").Find(bson.M{"_id":uid}).Sort("-timestamp").One(&ctx.User)
 			log.Println(ctx.User)
-			if err != nil {
-				log.Println("Fetch error")
-				w.WriteHeader(http.StatusUnauthorized)
-				return
-			}
-		} else if r.URL.Path != "/login" && !((r.URL.Path == "/users" || r.URL.Path == "/verify") && r.Method == "POST") {
+			log.Println("Auth:", claims["sub"])
+		} 
+	} else if r.URL.Path != "/login" && !((r.URL.Path == "/users" || r.URL.Path == "/verify") && r.Method == "POST") {
 			log.Println("Unauth")
 			w.WriteHeader(http.StatusUnauthorized)
 			return
-		}
 	}
 
 	err = h(buf, r, ctx)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
 	buf.Apply(w)
 }
 
@@ -104,6 +93,14 @@ func init() {
 }
 
 func main() {
+	gelfWriter, err := gelf.NewWriter("127.0.0.1:12202")
+	if err != nil {
+		log.Fatalf("gelf.NewWriter: %s", err)
+	}
+	// log to both stderr and graylog2
+	log.SetOutput(io.MultiWriter(os.Stderr, gelfWriter))
+	log.Printf("logging to stderr & graylog2@")
+
 	session, err := mgo.Dial("mongodb://127.0.0.1:27017")
 	if err != nil {
 		log.Println("Fatal error: ", err)
@@ -118,10 +115,9 @@ func main() {
 	}
 	
 	database = session.DB("pickup").Name
-	if err := session.DB("pickup").C("users").EnsureIndex(mgo.Index{
+	err = session.DB("pickup").C("users").EnsureIndex(mgo.Index{
 	        Key:    []string{"email"},
-	        Unique: true,
-	    });
+	        Unique: true,});
 
 	helpers.CheckErr(err, "Error ensuring unique email index on users.")
 
@@ -148,6 +144,13 @@ func main() {
 	router = pat.New()
 	controllers.Init(router)
 
+	// router.Post("/login", http.HandlerFunc(ServeHTTP))
+	// http.Handle("/")
+	// router.Get("/users/me", handler(controllers.UserAccount))
+	// router.Get("/users/{id", handler(controllers.UserInfo))
+	// router.Get("/users", handler(controllers.UsersIndex))
+	// router.Post("/users", handler(controllers.UsersNew))
+
 	router.Add("POST", "/login", handler(controllers.Login)).Name("Login")
 
 	router.Add("GET", "/users/me", handler(controllers.UserAccount))
@@ -164,6 +167,7 @@ func main() {
 	router.Add("GET", "/", handler(controllers.Index)).Name("index")
 
 	if err := http.ListenAndServe(":8077", router); err != nil {
+		log.Println("Fatal error -- panic: ", err.Error())
 		panic(err)
 	}
 }
