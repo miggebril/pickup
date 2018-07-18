@@ -139,12 +139,22 @@ func main() {
 	}
 
 	var u []models.User
-	query := session.DB("pickup").C("users").Find(bson.M{"verified":true})
+	query := session.DB("pickup").C("users").Find(bson.M{})
 	if err = query.All(&u); err != nil {
 		log.Println("Failed to query users for name/ID listings.", err)
 	} else {
 		for _, user := range u {
-			log.Println(user.GetIDEncoded(), user.Username)
+			log.Println(user.GetIDEncoded(), user.Username, user.ID)
+		}
+	}
+
+	var c []models.Court
+	query = session.DB("pickup").C("courts").Find(bson.M{})
+	if err = query.All(&c); err != nil {
+		log.Println("Failed to query courts for listings.", err)
+	} else {
+		for _, court := range c {
+			log.Println(court.GetIDEncoded(), court.Name, court.ID)
 		}
 	}
 

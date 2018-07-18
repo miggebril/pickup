@@ -30,6 +30,7 @@ type Result struct {
 type Game struct {
 	ID       bson.ObjectId `json:"-" bson:"_id,omitempty" col:"games"`
 	Court 	 bson.ObjectId `json:"-"`
+	Name 	 string
 	HomeTeam []User
 	AwayTeam []User
 	Result
