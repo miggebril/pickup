@@ -16,10 +16,11 @@ var session *mgo.Session
 var database string
 
 var emails []string
+var courts []models.Court
 
 var NEW_YORK = models.Location{Latitude: 40.761842, Longitude: -73.981626}
 
-func addGames(count int, l models.Location) {
+func addGames(count int) {
 
     fake, err := faker.New("en")
     if err != nil {
@@ -46,14 +47,17 @@ func addGames(count int, l models.Location) {
         }
         
         var home []models.User = users[0:len(users)/2]
-        var away models.User = users[len(users)/2:len(users)]
+        var away []models.User = users[len(users)/2:len(users)]
 
         games[i] = models.Game{ID: bson.NewObjectId()}
         games[i].Name = fake.UserName()
-        games[i].Location = scramble(l)
+
+        games[i].Court = courts[rand.Intn(len(courts) + 1)].ID
+        games[i].HomeTeam = home
+        games[i].AwayTeam = away
         games[i].Result = models.Result {
-            HomeScore: rand.Intn(22),
-            AwayScore: rand.Intn(22)
+            HomeScore: int32(rand.Intn(22)),
+            AwayScore: int32(rand.Intn(22)),
         }
 
         games[i].BoxScore = make(map[string]interface{}, 0)
@@ -68,7 +72,34 @@ func addGames(count int, l models.Location) {
     }
 }
 
-func addUsers(n int, l models.Location) {
+
+func addCourts(n int) {
+    fake, err := faker.New("en")
+    if err != nil {
+        log.Println("Failed to create faker.", err)
+        return
+    }
+
+    courts = make([]models.Court, n)
+    for i := 0; i < n; i++ {
+        courts[i] = models.Court{ID: bson.NewObjectId()}
+        courts[i].Name = fake.CompanyName() + " Park"
+        courts[i].Rating = rand.Float64() * 6
+        courts[i].City = "New York"
+        courts[i].State = "New York"
+        courts[i].Location = scramble(NEW_YORK)
+    }
+
+    log.Println(courts)
+
+    for i := 0; i < n; i++ {
+        if err := session.DB("pickup").C("courts").Insert(&courts[i]); err != nil {
+            log.Println("Failed to create court:", err)
+        }
+    }
+}
+
+func addUsers(n int) {
     fake, err := faker.New("en")
     if err != nil {
         log.Println("Failed to create faker.", err)
@@ -122,8 +153,9 @@ func main() {
         return
     }
 
-    addUsers(100, NEW_YORK)
-    addGames(10, NEW_YORK)
+    addUsers(100)
+    addCourts(20)
+    addGames(10)
 }
 
 func scramble(l models.Location) (r models.Location) {
