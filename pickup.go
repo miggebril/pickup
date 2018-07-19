@@ -60,6 +60,8 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	})
 
+
+
 	 //create the context
 	 ctx, _ := models.NewContext(r, session, database, auth)
 	 defer ctx.Close()
@@ -78,7 +80,7 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			log.Println(ctx.User)
 			log.Println("Auth:", claims["sub"])
 		} 
-	} else if r.URL.Path != "/login" && !((r.URL.Path == "/users" || r.URL.Path == "/verify") && r.Method == "POST") {
+	} else if !isLoginAttempt(r.URL.Path, r.Method) {
 			log.Println("Unauth")
 			w.WriteHeader(http.StatusUnauthorized)
 			return
@@ -86,6 +88,14 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	err = h(buf, r, ctx)
 	buf.Apply(w)
+}
+
+func isLoginAttempt(path string, method string) bool {
+	return (path == "/login" || isRegistrationAttempt(path, method))
+}
+
+func isRegistrationAttempt(path string, method string) bool {
+	return ((path == "/users" || path == "/verify") && method == "POST")
 }
 
 func init() {
@@ -101,7 +111,7 @@ func main() {
 	log.SetOutput(io.MultiWriter(os.Stderr, gelfWriter))
 	log.Printf("logging to stderr & graylog2@")
 
-	session, err := mgo.Dial("mongodb://127.0.0.1:27017")
+	session, err = mgo.Dial("127.0.0.1")
 	if err != nil {
 		log.Println("Fatal error: ", err)
 		panic(err)
@@ -143,13 +153,6 @@ func main() {
 
 	router = pat.New()
 	controllers.Init(router)
-
-	// router.Post("/login", http.HandlerFunc(ServeHTTP))
-	// http.Handle("/")
-	// router.Get("/users/me", handler(controllers.UserAccount))
-	// router.Get("/users/{id", handler(controllers.UserInfo))
-	// router.Get("/users", handler(controllers.UsersIndex))
-	// router.Post("/users", handler(controllers.UsersNew))
 
 	router.Add("POST", "/login", handler(controllers.Login)).Name("Login")
 

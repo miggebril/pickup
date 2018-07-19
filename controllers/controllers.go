@@ -68,26 +68,6 @@ func T(name string, pjax string) *template.Template {
 		filepath.Join("templates", name),
 	))
 
-	/*prefix := "FULL"
-	base := "_base.html"
-	if pjax != "" {
-		prefix = "PJAX"
-		base = "_pbase.html"
-	}
-
-	//if t, ok := cachedTemplates[prefix+name]; ok {
-	//	return t
-	//}
-
-
-	/*t := template.Must(template.New(base).Funcs(funcs).ParseGlob("templates/partials/*"))
-	t = template.Must(t.ParseFiles(
-		"templates/"+base,
-		filepath.Join("templates", name),
-	))*/
-
-	//cachedTemplates[prefix+name] = t  // REMOVE BEFORE PRODUCTIN
-
 	return t
 }
 
@@ -112,8 +92,24 @@ func LoginForm(w http.ResponseWriter, r *http.Request, ctx *models.Context) (err
 }
 
 func Login(w http.ResponseWriter, r *http.Request, ctx *models.Context) (err error) {
-	email, password := r.FormValue("email"), r.FormValue("password")
-	fmt.Println("Login called on", email, password)
+	var form bson.M
+
+    if r.Body == nil {
+        fmt.Println(err.Error())
+        http.Error(w, "Request required.", 400)
+        return
+    }
+
+    err = json.NewDecoder(r.Body).Decode(&form)
+    if err != nil {
+        fmt.Println(err.Error())
+        http.Error(w, err.Error(), 400)
+        return
+    }
+
+    email := form["Email"].(string)
+    password := form["Password"].(string)
+
 	token, err := models.Login(ctx, email, password)
 	if err != nil {
 		http.Error(w, "Invalid password.", http.StatusInternalServerError)

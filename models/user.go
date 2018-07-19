@@ -5,6 +5,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"encoding/json"
 	"encoding/base64"
+	"fmt"
 )
 
 type TokenAuthentication struct {
@@ -39,6 +40,7 @@ func (u User) GetIDEncoded() string {
 //password field to the hash.
 func (u *User) SetPassword(password string) {
 	hpass, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	fmt.Println(hpass)
 	if err != nil {
 		panic(err) //this is a panic because bcrypt errors on invalid costs
 	}
