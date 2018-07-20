@@ -110,7 +110,7 @@ func Login(w http.ResponseWriter, r *http.Request, ctx *models.Context) (err err
     email := form["Email"].(string)
     password := form["Password"].(string)
 
-	token, err := models.Login(ctx, email, password)
+	user, err := models.Login(ctx, email, password)
 	if err != nil {
 		http.Error(w, "Invalid password.", http.StatusInternalServerError)
 		return err
@@ -118,7 +118,7 @@ func Login(w http.ResponseWriter, r *http.Request, ctx *models.Context) (err err
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write(token)
+	w.Write(user)
 	return nil
 }
 

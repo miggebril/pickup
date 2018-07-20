@@ -37,13 +37,11 @@ func UsersNew(w http.ResponseWriter, r *http.Request, ctx *models.Context) (err 
 
     u.SetPassword(password)
 
-    //ripple_id, err := helpers.GenerateRippleAccount()
     if err != nil {
         log.Println("Error parsing new user form: ", err.Error())
         http.Error(w, err.Error(), http.StatusInternalServerError)
         return err
     }
-    //u.RippleID = ripple_id
 
     if err := ctx.C("users").Insert(u); err != nil {
         log.Println("Error inserting user to DB: ", err.Error())

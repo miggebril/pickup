@@ -8,7 +8,7 @@ import (
 	"fmt"
 )
 
-type TokenAuthentication struct {
+type Authentication struct {
 	Token string `json:"token" form:"token"`
 }
 
@@ -18,6 +18,7 @@ type User struct {
 	Username string 			
 	Password []byte			`json:"-"`
 
+	Token string `json:"-"`
 	Verified bool
 }
 
@@ -60,7 +61,8 @@ func Login(ctx *Context, email, password string) ([]byte, error) {
 		if err != nil {
 			return []byte(""), err
 		} else {
-			response, _ := json.Marshal(TokenAuthentication{token})
+			u.Token = token
+			response, _ := json.Marshal(u)
 			return response, nil
 		}
 	}
