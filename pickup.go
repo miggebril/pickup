@@ -60,11 +60,9 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	})
 
-
-
 	 //create the context
-	 ctx, _ := models.NewContext(r, session, database, auth)
-	 defer ctx.Close()
+	ctx, _ := models.NewContext(r, session, database, auth)
+	defer ctx.Close()
 
     if err == nil && token.Valid {
     	fmt.Printf("%s", r.URL.Path)
