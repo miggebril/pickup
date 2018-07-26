@@ -55,7 +55,7 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
 			return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
 		} else {
-			log.Println("Token parsed and returned")
+			log.Println("Token authenticated")
 			return auth.PublicKey, nil
 		}
 	})

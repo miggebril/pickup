@@ -18,7 +18,7 @@ type User struct {
 	Username string 			
 	Password []byte			`json:"-"`
 
-	Token string `json:"-"`
+	Token string
 	Verified bool
 }
 
@@ -59,6 +59,7 @@ func Login(ctx *Context, email, password string) ([]byte, error) {
 	if err = bcrypt.CompareHashAndPassword(u.Password, []byte(password)); err == nil {
 		token, err := ctx.Auth.GenerateToken(u.ID)
 		if err != nil {
+			fmt.Println("Login attempt failed to generate user's token: ", err.Error())
 			return []byte(""), err
 		} else {
 			u.Token = token

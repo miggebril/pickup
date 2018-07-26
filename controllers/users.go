@@ -81,6 +81,7 @@ func UserInfo(w http.ResponseWriter, r *http.Request, ctx *models.Context) (err 
     }
 
     var u models.User
+    log.Println("Querying for user id: ", id)
     err = ctx.C("users").Find(bson.M{"_id":id}).One(&u)
     if err != nil {
         log.Println("Failed to query vendor index.", err)

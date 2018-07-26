@@ -112,7 +112,7 @@ func Login(w http.ResponseWriter, r *http.Request, ctx *models.Context) (err err
 
 	user, err := models.Login(ctx, email, password)
 	if err != nil {
-		http.Error(w, "Invalid password.", http.StatusInternalServerError)
+		http.Error(w, "Invalid password.", http.StatusUnauthorized)
 		return err
 	}
 
