@@ -3,6 +3,7 @@ package main
 import (
 	"io"
 	"pickup/controllers"
+	"github.com/rs/cors"
 	"github.com/goods/httpbuf"
 	"github.com/gorilla/pat"
 	"encoding/gob"
@@ -85,6 +86,7 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = h(buf, r, ctx)
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	buf.Apply(w)
 }
 
@@ -167,7 +169,9 @@ func main() {
 	
 	router.Add("GET", "/", handler(controllers.Index)).Name("index")
 
-	if err := http.ListenAndServe(":8077", router); err != nil {
+	handler := cors.Default().Handler(router)
+
+	if err := http.ListenAndServe(":8077", handler); err != nil {
 		log.Println("Fatal error -- panic: ", err.Error())
 		panic(err)
 	}
