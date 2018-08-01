@@ -28,9 +28,22 @@ func GameNew(w http.ResponseWriter, r *http.Request, ctx *models.Context) (err e
     }
 
     courtId, err := helpers.ObjectIdFromString(form["Court"].(string))
-    helpers.CheckErr(err, "Error parsing encoded court ID")
+    if err != nil {
+    	log.Println(err.Error())
+        http.Error(w, err.Error(), 400)
+        return
+    }
+
+    var homeCourt models.Court
+
+    log.Println("Querying for game id: ", courtId)
+    if err = ctx.C("courts").Find(bson.M{"_id":courtId}).One(&homeCourt); err != nil {
+    	log.Println("Failed to query courts index.", err)
+        return nil
+    }
 
     game := &models.Game{
+    	HomeCourt: homeCourt,
     	Owner: 	  *ctx.User,
         Court:    courtId,
         Name: 	  form["Name"].(string),

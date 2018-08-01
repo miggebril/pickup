@@ -28,14 +28,15 @@ type Result struct {
 }
 
 type Game struct {
-	ID       bson.ObjectId `json:"-" bson:"_id,omitempty" col:"games"`
-	Court 	 bson.ObjectId `json:"-"`
-	Owner	 User
-	Name 	 string
-	HomeTeam []User
-	AwayTeam []User
+	ID       	bson.ObjectId `json:"-" bson:"_id,omitempty" col:"games"`
+	Court 	 	bson.ObjectId `json:"-"`
+	HomeCourt 	Court
+	Owner	 	User
+	Name 	 	string
+	HomeTeam 	[]User
+	AwayTeam 	[]User
 	Result
-	BoxScore map[string]interface{}
+	BoxScore 	map[string]interface{}
 }
 
 func (g Game) GetIDEncoded() string {
