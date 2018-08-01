@@ -163,6 +163,11 @@ func main() {
 	router.Add("GET", "/users", handler(controllers.UsersIndex))
 	router.Add("POST", "/users", handler(controllers.UsersNew))
 
+	router.Add("GET", "/games/{gameId}", handler(controllers.GameInfo))
+	
+	router.Add("GET", "/games", handler(controllers.GameIndex))
+	router.Add("POST", "/games", handler(controllers.GameNew))
+
 	router.Add("GET", "/test", handler(controllers.TestName))
 
 	router.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("./static/"))))

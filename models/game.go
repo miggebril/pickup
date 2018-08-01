@@ -45,11 +45,11 @@ func (g *Game) MarshalJSON() ([]byte, error) {
 	type Alias Game
 	return json.Marshal(&struct {
 		ID 				string `json:"ID"`
-		Timestamp		string `json:"Timestamp"`
+		Court			string `json:"CourtID"`
 		*Alias
 	}{
 		ID: helpers.GetIDEncoded(g.ID),
-		Timestamp: g.ID.Time().Format("01/02/2006"),
+		Court: helpers.GetIDEncoded(g.Court),
 		Alias: (*Alias)(g),
 	})
 }

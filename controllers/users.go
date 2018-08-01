@@ -129,6 +129,7 @@ func UsersIndex(w http.ResponseWriter, r *http.Request, ctx *models.Context) (er
         return err
     }
     w.Header().Set("Content-Type", "application/json")
+    w.WriteHeader(http.StatusOK)
     w.Write(js)
     return nil
 }

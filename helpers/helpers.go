@@ -8,8 +8,11 @@ import (
 	"strconv"
 	"time"
 	"reflect"
+	// "pickup/models"
 )
 
+var RADIUS = 10 
+// var NEW_YORK = models.Location{Latitude: 40.761842, Longitude: -73.981626}
 var logger = log.New(os.Stderr, "app: ", log.LstdFlags) //| log.Llongfile)
 
 func CheckErr(err error, msg string) {
@@ -26,6 +29,12 @@ func ObjectIdFromString(encodedid string) (bson.ObjectId, error) {
 	}
 	return bson.ObjectId(data), err
 }
+
+// func RenderRandomLocation() (loc models.Location) {
+//     loc.Latitude = NEW_YORK.Latitude+float64(rand.Intn(2*RADIUS)-RADIUS)/60
+//     loc.Longitude = NEW_YORK.Longitude+float64(rand.Intn(2*RADIUS)-RADIUS)/60
+//     return loc
+// }
 
 func RenderPercent(m float64) string {
 	if m < 1.0 {
