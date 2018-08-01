@@ -30,6 +30,7 @@ type Result struct {
 type Game struct {
 	ID       bson.ObjectId `json:"-" bson:"_id,omitempty" col:"games"`
 	Court 	 bson.ObjectId `json:"-"`
+	Owner	 User
 	Name 	 string
 	HomeTeam []User
 	AwayTeam []User
@@ -46,10 +47,12 @@ func (g *Game) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&struct {
 		ID 				string `json:"ID"`
 		Court			string `json:"CourtID"`
+		//Owner			string `json:"OwnerID"`
 		*Alias
 	}{
 		ID: helpers.GetIDEncoded(g.ID),
 		Court: helpers.GetIDEncoded(g.Court),
+		//Owner: helpers.GetIDEncoded(g.Owner),
 		Alias: (*Alias)(g),
 	})
 }

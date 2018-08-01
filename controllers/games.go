@@ -31,6 +31,7 @@ func GameNew(w http.ResponseWriter, r *http.Request, ctx *models.Context) (err e
     helpers.CheckErr(err, "Error parsing encoded court ID")
 
     game := &models.Game{
+    	Owner: 	  *ctx.User,
         Court:    courtId,
         Name: 	  form["Name"].(string),
         ID:       bson.NewObjectId(),

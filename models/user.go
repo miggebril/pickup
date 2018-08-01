@@ -19,7 +19,7 @@ type User struct {
 	Password []byte			`json:"-"`
 
 	Token string
-	Verified bool
+	Verified bool			`json:"-"`
 }
 
 func (u *User) MarshalJSON() ([]byte, error) {

@@ -45,12 +45,15 @@ func addGames(count int) {
                 log.Println("Failed to query users for player with email.", err)
             }
         }
+
+        var host models.User = users[0]
         
         var home []models.User = users[0:len(users)/2]
         var away []models.User = users[len(users)/2:len(users)]
 
         games[i] = models.Game{ID: bson.NewObjectId()}
         games[i].Name = fake.UserName()
+        games[i].Owner = host
 
         games[i].Court = courts[rand.Intn(len(courts) + 1)].ID
         games[i].HomeTeam = home
