@@ -53,6 +53,7 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	log.Println(buf)
 
 	token, err := jwt_request.ParseFromRequest(r, jwt_request.AuthorizationHeaderExtractor, func(token *jwt.Token) (interface{}, error) {
+		log.Println()
 		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
 			return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
 		} else {
@@ -164,7 +165,7 @@ func main() {
 	router.Add("POST", "/users", handler(controllers.UsersNew))
 
 	router.Add("GET", "/games/{gameId}", handler(controllers.GameInfo))
-	
+
 	router.Add("GET", "/games", handler(controllers.GameIndex))
 	router.Add("POST", "/games", handler(controllers.GameNew))
 
