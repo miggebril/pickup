@@ -8,6 +8,7 @@ import (
 	"math/rand"
 	"os"
 	"log"
+    "github.com/mitchellh/mapstructure"
 )
 
 const RADIUS = 10 // In miles
@@ -70,6 +71,18 @@ func addGames(count int) {
         randomCourtSelect := session.DB("pickup").C("courts").Pipe([]bson.M{{"$match": bson.M{}}})
         if err = randomCourtSelect.One(&court); err != nil {
             log.Println("Failed to query random court", err)
+        }
+
+        var tempCourt map[string]interface{}
+        courtIter := randomCourtSelect.Iter()
+
+        for courtIter.Next(&tempCourt) {
+            if (tempCourt["name"].(string) == "") {
+                continue
+            } else {
+                mapstructure.Decode(tempCourt, &court)
+                break
+            }
         }
 
         games[i].Court = court.ID
@@ -176,9 +189,9 @@ func main() {
         return
     }
 
-    addUsers(100)
-    addCourts(20)
-    addGames(50)
+    //addUsers(100)
+    addCourts(100)
+    addGames(200)
 }
 
 func scramble(l models.Location) (r models.Location) {

@@ -108,6 +108,7 @@ func GameIndex(w http.ResponseWriter, r *http.Request, ctx *models.Context) (err
 	query := ctx.C("games").Find(bson.M{"$and" : []bson.M{ 
 		bson.M{"result.homescore" : bson.M{"$lt" : 16}}, 
 		bson.M{"result.awayscore" : bson.M{"$lt" : 16}},
+		bson.M{"homecourt.name" : bson.M{"$ne" : ""}},
 	}}).Limit(30)
 
     if err = query.All(&games); err != nil {
