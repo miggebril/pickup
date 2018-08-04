@@ -30,20 +30,31 @@ func addGames(count int) {
 
     games := make([]models.Game, count)
     for i := 0; i < count; i++ {
-        teamPlayers := rand.Intn(11)
+        teamPlayers := rand.Intn(10) + 1
         if (teamPlayers % 2 == 1) {
             teamPlayers += 1
         }
 
-        users := make([]models.User, teamPlayers*2)
-        for i := 0; i < len(users); i++ {
-            randIndex := rand.Intn(len(emails))
-            randEmail := emails[randIndex]
+        users := make([]models.User, teamPlayers)
+        randomPlayerSelect := session.DB("pickup").C("users").Pipe([]bson.M{{"$match": bson.M{}}})
 
-            randomSelect := session.DB("pickup").C("users").Find(bson.M{"email":randEmail})
-            if err = randomSelect.One(&users[i]); err != nil {
-                log.Println("Failed to query users for player with email.", err)
+        pipeIter := randomPlayerSelect.Iter()
+
+        var playerCount int = 0
+        var temp map[string]interface{}
+        
+        for pipeIter.Next(&temp) {
+            if (playerCount >= teamPlayers) {
+                break;
             }
+
+            users[playerCount] = models.User{
+                Email : temp["email"].(string),
+                ID : temp["_id"].(bson.ObjectId),
+                Username : temp["username"].(string),
+            }
+
+            playerCount += 1
         }
 
         var host models.User = users[0]
@@ -55,9 +66,18 @@ func addGames(count int) {
         games[i].Name = fake.UserName()
         games[i].Owner = host
 
-        games[i].Court = courts[rand.Intn(len(courts) + 1)].ID
+        var court models.Court
+        randomCourtSelect := session.DB("pickup").C("courts").Pipe([]bson.M{{"$match": bson.M{}}})
+        if err = randomCourtSelect.One(&court); err != nil {
+            log.Println("Failed to query random court", err)
+        }
+
+        games[i].Court = court.ID
         games[i].HomeTeam = home
         games[i].AwayTeam = away
+
+        games[i].HomeTeam[0] = games[i].Owner
+
         games[i].Result = models.Result {
             HomeScore: int32(rand.Intn(22)),
             AwayScore: int32(rand.Intn(22)),
@@ -158,7 +178,7 @@ func main() {
 
     addUsers(100)
     addCourts(20)
-    addGames(10)
+    addGames(50)
 }
 
 func scramble(l models.Location) (r models.Location) {
